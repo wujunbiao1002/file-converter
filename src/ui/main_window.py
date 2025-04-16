@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QApplication, QFrame, QHBoxLayout, QPushButton
 )
 from PyQt6.QtCore import Qt, QSize, QPoint, QRect, QRectF, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QAction, QIcon, QPainter, QColor, QPainterPath, QRegion
+from PyQt6.QtGui import QAction, QIcon, QPainter, QColor, QPainterPath, QRegion, QPen
 
 from ui.components.word_tab import WordTab
 from ui.components.excel_tab import ExcelTab
@@ -48,8 +48,25 @@ class MainWindow(QMainWindow):
         
         # 如果启用了Windows 11风格，则设置无框窗口，但不设置透明背景
         theme = self.config.get("theme", "light")
-        if theme.startswith("win11_"):
+        self.is_win11_style = theme.startswith("win11_")
+        if self.is_win11_style:
+            # 无框窗口
             self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+            # 关闭半透明背景
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+            # 设置属性，减少重绘闪烁
+            self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, False)
+            # 双缓冲绘制，减少闪烁
+            self.setAttribute(Qt.WidgetAttribute.WA_PaintOnScreen, False)
+            self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
+            
+            # 在初始化时设置圆角遮罩，避免每次重绘时重新计算
+            # 延迟设置遮罩，确保窗口已完全创建
+            QApplication.instance().processEvents()
+            self._setup_rounded_mask()
+            
+            # 标记是否正在拖动，用于减少重绘
+            self.is_dragging = False
         
         # 创建中央容器
         self.central_widget = QWidget()
@@ -61,8 +78,7 @@ class MainWindow(QMainWindow):
         self.main_layout.setSpacing(0)
         
         # 如果是Windows 11风格，添加自定义标题栏
-        theme = self.config.get("theme", "light")
-        if theme.startswith("win11_"):
+        if self.is_win11_style:
             self.title_bar = self.create_title_bar()
             self.main_layout.addWidget(self.title_bar)
         
@@ -70,7 +86,7 @@ class MainWindow(QMainWindow):
         self.content_container = QWidget()
         self.content_layout = QVBoxLayout(self.content_container)
         
-        if theme.startswith("win11_"):
+        if self.is_win11_style:
             # 使用圆角容器
             self.content_layout.setContentsMargins(10, 5, 10, 10)
         else:
@@ -135,14 +151,29 @@ class MainWindow(QMainWindow):
         else:
             # 使用默认图标
             icon_label.setText("🔄")
+        
+        # 设置标签可拖动
+        icon_label.mousePressEvent = self.title_bar_mouse_press
         title_bar_layout.addWidget(icon_label)
         title_bar_layout.addSpacing(8)
         
         # 添加标题文本
         title_label = QLabel("Junly文件工具")
         title_label.setStyleSheet("font-weight: bold;")
+        # 设置标签可拖动
+        title_label.mousePressEvent = self.title_bar_mouse_press
+        title_label.mouseMoveEvent = self.title_bar_mouse_move
+        title_label.mouseReleaseEvent = self.title_bar_mouse_release
         title_bar_layout.addWidget(title_label)
-        title_bar_layout.addStretch(1)
+        
+        # 添加可拖动的空白区域
+        drag_area = QWidget()
+        drag_area.setCursor(Qt.CursorShape.ArrowCursor)
+        # 设置空白区域可拖动
+        drag_area.mousePressEvent = self.title_bar_mouse_press
+        drag_area.mouseMoveEvent = self.title_bar_mouse_move
+        drag_area.mouseReleaseEvent = self.title_bar_mouse_release
+        title_bar_layout.addWidget(drag_area, 1)  # 将空白区域设为可伸缩
         
         # 添加窗口控制按钮
         button_size = 28
@@ -372,11 +403,46 @@ class MainWindow(QMainWindow):
         self.fade_in_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
         self.fade_in_animation.start()
     
+    def _setup_rounded_mask(self):
+        """设置圆角窗口遮罩"""
+        if not hasattr(self, "is_win11_style") or not self.is_win11_style:
+            return
+        
+        try:    
+            # 创建圆角矩形路径
+            rect = self.rect()
+            path = QPainterPath()
+            path.addRoundedRect(QRectF(rect), 10, 10)
+            
+            # 创建圆角区域
+            region = QRegion(path.toFillPolygon().toPolygon())
+            self.setMask(region)
+        except Exception as e:
+            print(f"设置窗口遮罩出错: {e}")
+    
+    def resizeEvent(self, event):
+        """窗口大小改变事件，更新圆角遮罩"""
+        super().resizeEvent(event)
+        if hasattr(self, "is_win11_style") and self.is_win11_style:
+            self._setup_rounded_mask()
+    
     def paintEvent(self, event):
         """绘制事件，用于实现圆角窗口和阴影效果"""
         theme = self.config.get("theme", "light")
         
         if theme.startswith("win11_"):
+            # 拖动过程中使用最简单的绘制方式
+            if hasattr(self, "is_dragging") and self.is_dragging:
+                painter = QPainter(self)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+                
+                # 简单背景填充
+                if theme == "win11_light":
+                    painter.fillRect(self.rect(), QColor(245, 245, 245))
+                else:
+                    painter.fillRect(self.rect(), QColor(32, 32, 32))
+                return
+            
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             
@@ -388,43 +454,133 @@ class MainWindow(QMainWindow):
             path = QPainterPath()
             path.addRoundedRect(QRectF(rect), 10, 10)
             
+            # 检查是否正在拖动中
+            is_dragging = self.property("no_shadows_during_drag")
+            
             # 绘制不透明背景 - 移除透明度
             if theme == "win11_light":
                 # 浅色主题背景 - 完全不透明
-                painter.fillPath(path, QColor(245, 245, 245))
+                bg_color = QColor(245, 245, 245)
+                painter.fillPath(path, bg_color)
+                
+                # 仅在非拖动状态添加更多细节
+                if not is_dragging:
+                    # 为浅色主题添加一点点边框以增加层次感
+                    pen = QPen(QColor(200, 200, 200))
+                    pen.setWidth(1)
+                    painter.setPen(pen)
+                    painter.drawPath(path)
             else:
                 # 暗色主题背景 - 完全不透明
-                painter.fillPath(path, QColor(32, 32, 32))
+                bg_color = QColor(32, 32, 32)
+                painter.fillPath(path, bg_color)
+                
+                # 仅在非拖动状态添加更多细节
+                if not is_dragging:
+                    # 为暗色主题添加一点点亮边框增加层次感
+                    pen = QPen(QColor(70, 70, 70))
+                    pen.setWidth(1)
+                    painter.setPen(pen)
+                    painter.drawPath(path)
             
-            # 创建圆角区域
-            region = QRegion(path.toFillPolygon().toPolygon())
-            self.setMask(region)
+            # 不再每次都重新设置遮罩，提高性能
+            # 遮罩设置移到_setup_rounded_mask和resizeEvent中处理
     
-    # 添加窗口拖动支持
+    # 标题栏鼠标事件处理（专门用于标题栏控件）
+    def title_bar_mouse_press(self, event):
+        """标题栏鼠标按下事件"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            # 保存鼠标全局位置，避免坐标转换引起的误差
+            self._drag_pos = event.globalPosition()
+            self._window_pos = self.mapToGlobal(QPoint(0, 0))
+            
+            if hasattr(self, "is_win11_style") and self.is_win11_style:
+                # 标记开始拖动
+                self.is_dragging = True
+                # 设置拖动标志，降低绘制复杂度
+                self.setProperty("no_shadows_during_drag", True)
+                # 最小化更新区域
+                self.update(QRect(0, 0, self.width(), 1))
+            event.accept()
+    
+    def title_bar_mouse_move(self, event):
+        """标题栏鼠标移动事件"""
+        if hasattr(self, '_drag_pos') and self.is_dragging and event.buttons() & Qt.MouseButton.LeftButton:
+            # 使用全局坐标直接计算偏移，避免坐标空间转换
+            current_global_pos = event.globalPosition()
+            delta = current_global_pos - self._drag_pos
+            
+            # 计算新位置
+            new_x = int(self._window_pos.x() + delta.x())
+            new_y = int(self._window_pos.y() + delta.y())
+            
+            # 直接使用整数坐标移动窗口，避免浮点误差
+            self.move(new_x, new_y)
+            event.accept()
+    
+    def title_bar_mouse_release(self, event):
+        """标题栏鼠标释放事件"""
+        if hasattr(self, '_drag_pos'):
+            del self._drag_pos
+            if hasattr(self, "is_win11_style") and self.is_win11_style:
+                # 标记结束拖动
+                self.is_dragging = False
+                # 恢复阴影效果
+                self.setProperty("no_shadows_during_drag", False)
+                self.update()
+            event.accept()
+            
     def mousePressEvent(self, event):
         """鼠标按下事件，用于实现窗口拖动"""
         # 无论是什么主题，都保存鼠标点击位置
         if event.button() == Qt.MouseButton.LeftButton:
-            # 保存鼠标点击位置
-            self._drag_pos = event.position()
+            # 保存鼠标全局位置和窗口位置
+            self._drag_pos = event.globalPosition()
+            self._window_pos = self.mapToGlobal(QPoint(0, 0))
+            
+            # 标记开始拖动
+            self.is_dragging = True
+            # 取消阴影动画效果，提高拖动性能
+            if hasattr(self, "is_win11_style") and self.is_win11_style:
+                self.setProperty("no_shadows_during_drag", True)
+                # 最小化更新区域
+                self.update(QRect(0, 0, self.width(), 1))
             event.accept()
+        else:
+            super().mousePressEvent(event)
     
     def mouseMoveEvent(self, event):
         """鼠标移动事件，用于实现窗口拖动"""
-        # 确保任何主题下都能拖动窗口，但只在顶部区域
-        if hasattr(self, '_drag_pos') and event.buttons() & Qt.MouseButton.LeftButton:
-            # 如果鼠标在窗口顶部区域，实现拖动
-            if event.position().y() < 40:  # 仅顶部区域可拖动
-                diff = event.position() - self._drag_pos
-                new_pos = self.pos() + QPoint(int(diff.x()), int(diff.y()))
-                self.move(new_pos)
-                event.accept()
+        # 确保任何主题下都能拖动窗口
+        if hasattr(self, '_drag_pos') and self.is_dragging and event.buttons() & Qt.MouseButton.LeftButton:
+            # 使用全局坐标直接计算偏移，避免坐标空间转换
+            current_global_pos = event.globalPosition()
+            delta = current_global_pos - self._drag_pos
+            
+            # 计算新位置，使用整数坐标
+            new_x = int(self._window_pos.x() + delta.x())
+            new_y = int(self._window_pos.y() + delta.y())
+            
+            # 使用move而不是setGeometry来避免不必要的布局重计算
+            self.move(new_x, new_y)
+            event.accept()
+            return
+        
+        super().mouseMoveEvent(event)
     
     def mouseReleaseEvent(self, event):
         """鼠标释放事件，结束窗口拖动"""
         if hasattr(self, '_drag_pos'):
             del self._drag_pos
+            # 标记结束拖动
+            self.is_dragging = False
+            # 恢复阴影效果
+            if hasattr(self, "is_win11_style") and self.is_win11_style:
+                self.setProperty("no_shadows_during_drag", False)
+                self.update()
             event.accept()
+        else:
+            super().mouseReleaseEvent(event)
     
     def toggle_maximize(self):
         """切换窗口最大化/还原状态"""
