@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSize, QPoint, QRect, QRectF, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QAction, QIcon, QPainter, QColor, QPainterPath, QRegion, QPen
+from datetime import datetime
 
 from ui.components.word_tab import WordTab
 from ui.components.excel_tab import ExcelTab
@@ -123,6 +124,13 @@ class MainWindow(QMainWindow):
         self.progress_bar.setMaximumWidth(200)
         self.progress_bar.setVisible(False)
         self.statusBar.addPermanentWidget(self.progress_bar)
+        
+        # 添加版权信息到状态栏右下角
+        current_year = datetime.now().year
+        copyright_year = f"2025-{current_year}" if current_year > 2025 else "2025"
+        copyright_label = QLabel(f"{copyright_year} Junly")
+        copyright_label.setStyleSheet("color: #888888; margin-right: 5px;")
+        self.statusBar.addPermanentWidget(copyright_label)
         
         # 状态标签
         self.status_label = QLabel("就绪")
@@ -324,12 +332,14 @@ class MainWindow(QMainWindow):
         
     def show_about(self):
         """显示关于对话框"""
+        current_year = datetime.now().year
+        copyright_year = f"2025-{current_year}" if current_year > 2025 else "2025"
         QMessageBox.about(
             self, 
             "关于Junly文件工具",
             "Junly文件工具 v1.0.0\n\n"
             "一个用于各种文件格式转换的工具\n"
-            "版权所有 (c) 2025 Junly"
+            f"{copyright_year} Junly"
         )
     
     def dragEnterEvent(self, event):
