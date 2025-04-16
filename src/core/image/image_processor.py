@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-文件转换器 - 图片处理核心模块
+Junly文件工具 - 图片处理核心模块
 版权所有 (c) 2025 Junly
 """
 

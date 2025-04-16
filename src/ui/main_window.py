@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-文件转换器 - 主窗口
+Junly文件工具 - 主窗口
 版权所有 (c) 2025 Junly
 """
 
@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         # 设置窗口基本属性
-        self.setWindowTitle("文件转换器")
+        self.setWindowTitle("Junly文件工具")
         self.setMinimumSize(800, 600)
         
         # 如果启用了Windows 11风格，则设置无框窗口，但不设置透明背景
@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
         title_bar_layout.addSpacing(8)
         
         # 添加标题文本
-        title_label = QLabel("文件转换器")
+        title_label = QLabel("Junly文件工具")
         title_label.setStyleSheet("font-weight: bold;")
         title_bar_layout.addWidget(title_label)
         title_bar_layout.addStretch(1)
@@ -295,8 +295,8 @@ class MainWindow(QMainWindow):
         """显示关于对话框"""
         QMessageBox.about(
             self, 
-            "关于文件转换器",
-            "文件转换器 v1.0.0\n\n"
+            "关于Junly文件工具",
+            "Junly文件工具 v1.0.0\n\n"
             "一个用于各种文件格式转换的工具\n"
             "版权所有 (c) 2025 Junly"
         )

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-文件转换器 - 主程序入口
+Junly文件工具 - 主程序入口
 版权所有 (c) 2025 Junly
 """
 
@@ -28,7 +28,7 @@ def main():
     
     # 创建Qt应用
     app = QApplication(sys.argv)
-    app.setApplicationName("文件转换器")
+    app.setApplicationName("Junly文件工具")
     
     # 应用主题
     theme = config.get("theme", "win11_light")
