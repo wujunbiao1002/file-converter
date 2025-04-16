@@ -3,10 +3,13 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 echo 开始构建Junly文件工具轻量版可执行程序...
 
+rem 设置工作目录为项目根目录
+cd ..
+
 rem 确认UPX已安装
 if not exist ".venv\Lib\site-packages\PyInstaller\utils\upx\upx.exe" (
     echo UPX压缩工具未安装，正在安装...
-    call install_upx.bat
+    call packaging\install_upx.bat
 )
 
 rem 激活虚拟环境（如果有）
@@ -27,7 +30,7 @@ if exist "src\__pycache__" rmdir /s /q "src\__pycache__"
 
 rem 使用优化的spec文件构建
 echo 正在使用稳定版构建选项...
-pyinstaller --clean --upx-dir=".venv\Lib\site-packages\PyInstaller\utils\upx" file_converter.spec
+pyinstaller --clean --upx-dir=".venv\Lib\site-packages\PyInstaller\utils\upx" packaging\file_converter.spec
 
 echo.
 if %errorlevel% equ 0 (
@@ -85,6 +88,9 @@ rem 如果使用了虚拟环境，停用它
 if exist .venv\Scripts\deactivate.bat (
     call .venv\Scripts\deactivate.bat
 )
+
+rem 返回到packaging目录
+cd packaging
 
 endlocal
 pause 

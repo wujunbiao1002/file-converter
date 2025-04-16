@@ -2,6 +2,9 @@
 chcp 65001 >nul
 echo 开始构建Junly文件工具可执行程序...
 
+rem 设置工作目录为项目根目录
+cd ..
+
 rem 激活虚拟环境（如果有）
 if exist .venv\Scripts\activate.bat (
     call .venv\Scripts\activate.bat
@@ -23,7 +26,7 @@ if exist __pycache__ rmdir /s /q __pycache__
 
 rem 使用spec文件构建
 echo 正在构建标准版...
-pyinstaller --clean file_converter.spec
+pyinstaller --clean packaging\file_converter.spec
 
 echo.
 if %errorlevel% equ 0 (
@@ -52,5 +55,8 @@ rem 如果使用了虚拟环境，停用它
 if exist .venv\Scripts\deactivate.bat (
     call .venv\Scripts\deactivate.bat
 )
+
+rem 返回到packaging目录
+cd packaging
 
 pause 

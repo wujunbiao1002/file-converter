@@ -2,6 +2,9 @@
 chcp 65001 >nul
 echo 正在下载并安装UPX压缩工具...
 
+rem 设置工作目录为项目根目录
+cd ..
+
 rem 创建临时目录
 if not exist temp mkdir temp
 cd temp
@@ -25,7 +28,10 @@ cd ..
 echo 正在清理临时文件...
 rmdir /s /q temp
 
+rem 返回到packaging目录
+cd packaging
+
 echo UPX安装完成！
 echo.
-echo 你现在可以使用build_exe.bat脚本编译更小的可执行文件。
+echo 你现在可以使用build_exe_small.bat脚本编译更小的可执行文件。
 pause 
