@@ -7,3 +7,5 @@ markdown>=3.3.6
 lxml>=4.7.1 
 beautifulsoup4>=4.10.0 
 PyMuPDF>=1.18.0 
+pywin32>=228; platform_system == "Windows"
+comtypes>=1.1.10; platform_system == "Windows" 

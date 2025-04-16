@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QProgressBar, QGroupBox, QCheckBox, QMessageBox
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QColor
 
 from utils.logger import get_logger
 
@@ -515,13 +515,16 @@ class BatchWindow(QDialog):
         
         # 设置状态项颜色
         if success:
-            item.setForeground(Qt.GlobalColor.green)
+            item.setData(Qt.ItemDataRole.ForegroundRole, QColor(0, 180, 0))  # 绿色
         else:
-            item.setForeground(Qt.GlobalColor.red)
+            item.setData(Qt.ItemDataRole.ForegroundRole, QColor(255, 0, 0))  # 红色
             
         # 添加到状态列表
         self.file_status.addItem(item)
         self.file_status.scrollToBottom()
+        
+        # 强制刷新视图以确保颜色正确显示
+        self.file_status.repaint()
     
     def processing_completed(self):
         """所有文件处理完成"""

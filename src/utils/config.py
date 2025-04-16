@@ -20,7 +20,7 @@ class Config:
         self.defaults = {
             "default_output_path": str(Path.home() / "Downloads"),
             "language": "zh_CN",
-            "theme": "light",
+            "theme": "win11_light",
             "recent_files": [],
             "max_recent_files": 10,
             "batch_threads": 4

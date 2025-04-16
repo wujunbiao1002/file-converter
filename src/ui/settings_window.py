@@ -74,11 +74,33 @@ class SettingsWindow(QDialog):
         # 主题设置
         theme_group = QGroupBox("主题")
         theme_layout = QVBoxLayout()
+        theme_layout.setSpacing(10)  # 增加间距
         
+        # 创建单选按钮
         self.theme_light = QRadioButton("亮色主题")
         self.theme_dark = QRadioButton("暗色主题")
         self.theme_win11_light = QRadioButton("Windows 11 亮色主题")
         self.theme_win11_dark = QRadioButton("Windows 11 暗色主题")
+        
+        # 添加额外样式
+        for btn in [self.theme_light, self.theme_dark, self.theme_win11_light, self.theme_win11_dark]:
+            btn.setMinimumHeight(28)  # 增加按钮高度
+            btn.setStyleSheet("""
+                QRadioButton {
+                    padding: 4px;
+                }
+                QRadioButton::indicator {
+                    width: 20px;
+                    height: 20px;
+                }
+            """)
+        
+        # 创建按钮组，确保只能选择一个
+        self.theme_button_group = QButtonGroup(self)
+        self.theme_button_group.addButton(self.theme_light)
+        self.theme_button_group.addButton(self.theme_dark)
+        self.theme_button_group.addButton(self.theme_win11_light)
+        self.theme_button_group.addButton(self.theme_win11_dark)
         
         theme_layout.addWidget(self.theme_light)
         theme_layout.addWidget(self.theme_dark)

@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QStatusBar, QProgressBar, QLabel, QWidget, QVBoxLayout,
     QApplication, QFrame, QHBoxLayout, QPushButton
 )
-from PyQt6.QtCore import Qt, QSize, QPoint, QRect
+from PyQt6.QtCore import Qt, QSize, QPoint, QRect, QRectF, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QAction, QIcon, QPainter, QColor, QPainterPath, QRegion
 
 from ui.components.word_tab import WordTab
@@ -23,6 +23,7 @@ from ui.components.image_tab import ImageTab
 from ui.components.text_tab import TextTab
 from ui.settings_window import SettingsWindow
 from utils.theme_manager import ThemeManager
+from utils.animation_helper import AnimationHelper
 
 class MainWindow(QMainWindow):
     """主窗口类"""
@@ -36,17 +37,19 @@ class MainWindow(QMainWindow):
         # 应用主题
         self.apply_theme()
         
+        # 为所有控件添加动画支持
+        AnimationHelper.setup_animation_for_all(self)
+        
     def init_ui(self):
         """初始化用户界面"""
         # 设置窗口基本属性
         self.setWindowTitle("文件转换器")
         self.setMinimumSize(800, 600)
         
-        # 如果启用了Windows 11风格，则设置无框窗口
+        # 如果启用了Windows 11风格，则设置无框窗口，但不设置透明背景
         theme = self.config.get("theme", "light")
         if theme.startswith("win11_"):
             self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         # 创建中央容器
         self.central_widget = QWidget()
@@ -119,6 +122,7 @@ class MainWindow(QMainWindow):
         """创建Windows 11风格的标题栏"""
         title_bar = QFrame()
         title_bar.setFixedHeight(32)
+        title_bar.setCursor(Qt.CursorShape.ArrowCursor)  # 确保鼠标指针形状正确
         title_bar_layout = QHBoxLayout(title_bar)
         title_bar_layout.setContentsMargins(10, 0, 10, 0)
         title_bar_layout.setSpacing(0)
@@ -326,8 +330,47 @@ class MainWindow(QMainWindow):
     
     def apply_theme(self):
         """应用当前主题"""
-        theme = self.config.get("theme", "light")
+        theme = self.config.get("theme", "win11_light")
+        
+        # 创建淡入淡出动画效果
+        self.fade_animation = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_animation.setDuration(300)  # 300毫秒
+        self.fade_animation.setStartValue(1.0)
+        self.fade_animation.setEndValue(0.7)
+        self.fade_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        
+        # 淡出
+        self.fade_animation.start()
+        
+        # 连接动画完成信号
+        self.fade_animation.finished.connect(self._apply_theme_and_fade_in)
+    
+    def _apply_theme_and_fade_in(self):
+        """应用主题并淡入"""
+        # 获取当前主题
+        theme = self.config.get("theme", "win11_light")
+        
+        # 应用主题
         ThemeManager.apply_theme(QApplication.instance(), theme)
+        
+        # 强制刷新窗口和所有子控件
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.update()
+        
+        # 刷新所有子控件
+        for child in self.findChildren(QWidget):
+            child.style().unpolish(child)
+            child.style().polish(child)
+            child.update()
+        
+        # 创建淡入动画
+        self.fade_in_animation = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_in_animation.setDuration(300)  # 300毫秒
+        self.fade_in_animation.setStartValue(0.7)
+        self.fade_in_animation.setEndValue(1.0)
+        self.fade_in_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        self.fade_in_animation.start()
     
     def paintEvent(self, event):
         """绘制事件，用于实现圆角窗口和阴影效果"""
@@ -343,15 +386,15 @@ class MainWindow(QMainWindow):
             # 创建圆角矩形路径
             rect = self.rect()
             path = QPainterPath()
-            path.addRoundedRect(rect, 10, 10)
+            path.addRoundedRect(QRectF(rect), 10, 10)
             
-            # 绘制半透明背景
+            # 绘制不透明背景 - 移除透明度
             if theme == "win11_light":
-                # 浅色主题背景
-                painter.fillPath(path, QColor(245, 245, 245, 250))
+                # 浅色主题背景 - 完全不透明
+                painter.fillPath(path, QColor(245, 245, 245))
             else:
-                # 暗色主题背景
-                painter.fillPath(path, QColor(32, 32, 32, 250))
+                # 暗色主题背景 - 完全不透明
+                painter.fillPath(path, QColor(32, 32, 32))
             
             # 创建圆角区域
             region = QRegion(path.toFillPolygon().toPolygon())
@@ -360,18 +403,16 @@ class MainWindow(QMainWindow):
     # 添加窗口拖动支持
     def mousePressEvent(self, event):
         """鼠标按下事件，用于实现窗口拖动"""
-        theme = self.config.get("theme", "light")
-        
-        if theme.startswith("win11_") and event.button() == Qt.MouseButton.LeftButton:
+        # 无论是什么主题，都保存鼠标点击位置
+        if event.button() == Qt.MouseButton.LeftButton:
             # 保存鼠标点击位置
             self._drag_pos = event.position()
             event.accept()
     
     def mouseMoveEvent(self, event):
         """鼠标移动事件，用于实现窗口拖动"""
-        theme = self.config.get("theme", "light")
-        
-        if theme.startswith("win11_") and hasattr(self, '_drag_pos'):
+        # 确保任何主题下都能拖动窗口，但只在顶部区域
+        if hasattr(self, '_drag_pos') and event.buttons() & Qt.MouseButton.LeftButton:
             # 如果鼠标在窗口顶部区域，实现拖动
             if event.position().y() < 40:  # 仅顶部区域可拖动
                 diff = event.position() - self._drag_pos

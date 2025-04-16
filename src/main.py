@@ -31,8 +31,11 @@ def main():
     app.setApplicationName("文件转换器")
     
     # 应用主题
-    theme = config.get("theme", "light")
+    theme = config.get("theme", "win11_light")
     ThemeManager.apply_theme(app, theme)
+    
+    # 确保在所有控件上应用样式
+    app.processEvents()
     
     # 设置应用图标
     icon_path = os.path.join(os.path.dirname(__file__), "resources", "icons", "app.png")
