@@ -15,6 +15,7 @@ from ui.main_window import MainWindow
 from utils.logger import setup_logger, get_logger
 from utils.config import Config
 from utils.theme_manager import ThemeManager
+from utils.app_info import AppInfo
 
 def main():
     """主程序入口函数"""
@@ -28,7 +29,7 @@ def main():
     
     # 创建Qt应用
     app = QApplication(sys.argv)
-    app.setApplicationName("Junly文件工具")
+    app.setApplicationName(AppInfo.get_app_name())
     
     # 应用主题
     theme = config.get("theme", "win11_light")

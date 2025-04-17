@@ -25,6 +25,7 @@ from ui.components.text_tab import TextTab
 from ui.settings_window import SettingsWindow
 from utils.theme_manager import ThemeManager
 from utils.animation_helper import AnimationHelper
+from utils.app_info import AppInfo
 
 class MainWindow(QMainWindow):
     """主窗口类"""
@@ -44,7 +45,7 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         # 设置窗口基本属性
-        self.setWindowTitle("Junly文件工具")
+        self.setWindowTitle(AppInfo.get_app_name())
         self.setMinimumSize(800, 600)
         
         # 如果启用了Windows 11风格，则设置无框窗口，但不设置透明背景
@@ -127,8 +128,14 @@ class MainWindow(QMainWindow):
         
         # 添加版权信息到状态栏右下角
         current_year = datetime.now().year
-        copyright_year = f"2025-{current_year}" if current_year > 2025 else "2025"
-        copyright_label = QLabel(f"{copyright_year} Junly")
+        
+        # 添加版本号标签，使用AppInfo类获取版本信息
+        version_label = QLabel(AppInfo.get_full_version())
+        version_label.setStyleSheet("color: #888888; margin-right: 5px;")
+        self.statusBar.addPermanentWidget(version_label)
+        
+        # 使用AppInfo类获取版权信息
+        copyright_label = QLabel(AppInfo.get_copyright_text(current_year))
         copyright_label.setStyleSheet("color: #888888; margin-right: 5px;")
         self.statusBar.addPermanentWidget(copyright_label)
         
@@ -166,7 +173,7 @@ class MainWindow(QMainWindow):
         title_bar_layout.addSpacing(8)
         
         # 添加标题文本
-        title_label = QLabel("Junly文件工具")
+        title_label = QLabel(AppInfo.get_app_name())
         title_label.setStyleSheet("font-weight: bold;")
         # 设置标签可拖动
         title_label.mousePressEvent = self.title_bar_mouse_press
@@ -332,14 +339,10 @@ class MainWindow(QMainWindow):
         
     def show_about(self):
         """显示关于对话框"""
-        current_year = datetime.now().year
-        copyright_year = f"2025-{current_year}" if current_year > 2025 else "2025"
         QMessageBox.about(
             self, 
-            "关于Junly文件工具",
-            "Junly文件工具 v1.0.0\n\n"
-            "一个用于各种文件格式转换的工具\n"
-            f"{copyright_year} Junly"
+            f"关于{AppInfo.get_app_name()}",
+            AppInfo.get_about_text()
         )
     
     def dragEnterEvent(self, event):
