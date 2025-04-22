@@ -481,27 +481,6 @@ class ImageTab(QWidget):
         start_button.setEnabled(True)
         
         if success:
-            # 更新文件列表状态
-            if results:
-                for i, (input_path, output_path, ok, result_msg) in enumerate(results):
-                    for j in range(file_list.count()):
-                        if file_list.item(j).text() == input_path:
-                            item = file_list.item(j)
-                            if ok:
-                                item.setText(f"{input_path} -> {output_path} {result_msg}")
-                                # 设置绿色并强制刷新
-                                color = QColor(0, 128, 0)  # 绿色
-                                item.setData(Qt.ItemDataRole.ForegroundRole, color)  # 使用ItemDataRole代替直接设置foreground
-                            else:
-                                item.setText(f"{input_path} - 失败: {result_msg}")
-                                # 设置红色并强制刷新
-                                color = QColor(255, 0, 0)  # 红色
-                                item.setData(Qt.ItemDataRole.ForegroundRole, color)  # 使用ItemDataRole代替直接设置foreground
-                            break
-                
-                # 强制刷新视图以确保颜色正确显示
-                file_list.repaint()
-            
             QMessageBox.information(self, "处理完成", "图片处理成功！")
         else:
             QMessageBox.critical(self, "处理失败", f"错误: {message}") 

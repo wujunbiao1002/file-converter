@@ -350,7 +350,8 @@ class TextTab(QWidget):
                 QMessageBox.warning(self, "警告", "没有有效的替换规则")
                 return
             
-            self.processor.set_replace_rules(rules)
+            # 修复批量替换功能闪退问题，直接传递规则列表，而非规则文本
+            self.processor.replace_rules = rules
             
         # 启动处理线程
         self.progress_bar.setValue(0)
