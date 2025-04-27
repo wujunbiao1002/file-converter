@@ -12,7 +12,8 @@ import openpyxl
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml.ns import qn
+from docx.oxml.ns import qn, nsdecls
+from docx.oxml import parse_xml
 from bs4 import BeautifulSoup
 
 class MarkdownConverter:
@@ -132,7 +133,13 @@ class MarkdownConverter:
         table = doc.add_table(rows=num_rows, cols=max_cols)
         table.style = 'Table Grid'
         
-        # 填充表格数据
+        # 设置表格自动调整宽度
+        table.autofit = True
+        table.allow_autofit = True
+        
+        # 填充表格数据并计算最大文本长度（考虑中英文字符宽度差异）
+        col_content_widths = [0] * max_cols
+        
         for i, row in enumerate(rows):
             cells = row.find_all(['th', 'td'])
             for j, cell in enumerate(cells):
@@ -140,11 +147,61 @@ class MarkdownConverter:
                     text = cell.get_text().strip()
                     table.cell(i, j).text = text
                     
+                    # 计算文本宽度（中文字符占用更大宽度）
+                    char_width = 0
+                    for char in text:
+                        # 判断是否是中文或其他宽字符
+                        if ord(char) > 127:
+                            char_width += 1.5  # 中文字符宽度
+                        else:
+                            char_width += 1.0  # 英文字符宽度
+                    
+                    # 更新此列的最大文本宽度
+                    col_content_widths[j] = max(col_content_widths[j], char_width)
+                    
                     # 如果是表头，应用粗体样式
                     if cell.name == 'th' or i == 0:
                         for paragraph in table.cell(i, j).paragraphs:
                             for run in paragraph.runs:
                                 run.bold = True
+        
+        # 设置表格不自动调整，以便我们手动设置列宽
+        table.autofit = False
+        table.allow_autofit = False
+        
+        # 计算总宽度和每列占比
+        total_content_width = sum(col_content_widths)
+        
+        # 页面最大宽度（单位：英寸）- 考虑页面边距
+        page_width = 6.5
+        
+        # 根据内容长度设置列宽
+        for j, char_width in enumerate(col_content_widths):
+            # 设置最小和最大宽度限制
+            min_width = 0.5  # 英寸
+            
+            # 根据内容占总内容的比例计算列宽
+            if total_content_width > 0:
+                # 根据内容比例分配宽度，但至少保持最小宽度
+                width_ratio = char_width / total_content_width
+                width = max(width_ratio * page_width, min_width)
+            else:
+                width = min_width
+            
+            # 为表格中每个单元格设置宽度
+            for cell in table.columns[j].cells:
+                cell.width = Inches(width)
+        
+        # 为了确保表格自适应，我们设置表格属性
+        # 首先设置每个单元格的宽度类型为auto
+        for row in table.rows:
+            for cell in row.cells:
+                # 使用低级API直接设置宽度类型为auto
+                cell._tc.tcPr.tcW.type = 'auto'
+                cell._tc.tcPr.tcW.w = 0
+                
+        # 然后设置表格布局为自动调整
+        table.autofit = True
     
     def extract_tables_to_excel(self, md_content, output_path, progress_callback=None):
         """提取Markdown表格数据，保存为Excel"""
