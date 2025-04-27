@@ -26,7 +26,6 @@ wheels/
 
 # PyInstaller打包文件
 *.manifest
-*.spec
 
 # 单元测试/覆盖率报告
 htmlcov/
