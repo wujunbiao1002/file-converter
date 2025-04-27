@@ -65,11 +65,26 @@ class ExcelConversionThread(QThread):
                         )
                         results.append((input_file, output_path, True, ""))
                     elif self.conversion_type == "markdown":
+                        # 执行转换
                         result = self.converter.save_as_markdown(
                             workbook, output_path,
                             progress_callback=lambda value: self.progress_updated.emit(value)
                         )
-                        results.append((input_file, output_path, True, ""))
+                        
+                        # 检查是否有多个工作表
+                        if len(workbook.sheetnames) > 1:
+                            # 如有多工作表，记录所有可能的输出文件路径
+                            multiple_outputs = []
+                            base_name, _ = os.path.splitext(output_path)
+                            for sheet_name in workbook.sheetnames:
+                                sheet_output_path = f"{base_name}-{sheet_name}.md"
+                                multiple_outputs.append(sheet_output_path)
+                            
+                            # 在结果中标记它有多个输出文件
+                            results.append((input_file, multiple_outputs, True, "多Sheet文档，已为每个Sheet生成单独的MD文件"))
+                        else:
+                            # 单工作表情况
+                            results.append((input_file, output_path, True, ""))
                     else:
                         results.append((input_file, "", False, f"不支持的转换类型: {self.conversion_type}"))
                 except Exception as e:
@@ -306,7 +321,20 @@ class ExcelTab(QWidget):
         self.convert_button.setText("开始转换")
         
         if success:
-            QMessageBox.information(self, "转换成功", "Excel文档转换成功!")
+            # 检查是否有多工作表转换情况
+            has_multi_sheet = False
+            result_message = "Excel文档转换成功!"
+            
+            if results:
+                for _, output_path, _, info in results:
+                    if isinstance(output_path, list) or (info and "多Sheet文档" in info):
+                        has_multi_sheet = True
+                        break
+            
+            if has_multi_sheet:
+                result_message = "Excel文档转换成功!\n\n注意：检测到多工作表Excel文件，已为每个工作表创建单独的Markdown文件。"
+            
+            QMessageBox.information(self, "转换成功", result_message)
         else:
             QMessageBox.critical(self, "转换失败", f"转换过程中发生错误:\n{message}")
     

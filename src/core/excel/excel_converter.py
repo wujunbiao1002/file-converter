@@ -227,18 +227,114 @@ class ExcelConverter:
             raise Exception(f"保存为TXT失败: {str(e)}")
     
     def save_as_markdown(self, workbook, output_path, progress_callback=None):
-        """将Excel文档保存为Markdown格式"""
+        """将Excel文档保存为Markdown格式
+        
+        如果工作簿有多个工作表，将为每个工作表生成单独的MD文件，文件名格式为"原文件名-Sheet名称.md"
+        """
         try:
             sheet_count = len(workbook.sheetnames)
             processed_sheets = 0
             
-            with open(output_path, 'w', encoding='utf-8') as f:
+            # 检查是否有多个工作表
+            if sheet_count > 1:
+                # 将为每个工作表生成单独的文件
+                base_name, ext = os.path.splitext(output_path)
+                
                 for sheet_name in workbook.sheetnames:
+                    # 为每个Sheet创建单独的文件名
+                    sheet_output_path = f"{base_name}-{sheet_name}.md"
+                    
                     try:
                         sheet = workbook[sheet_name]
                         
-                        # 写入工作表名称作为标题
-                        f.write(f"# {sheet_name}\n\n")
+                        with open(sheet_output_path, 'w', encoding='utf-8') as f:
+                            # 处理特殊情况:如果这是一个只读工作表(read_only=True)
+                            if getattr(sheet, '_read_only', False):
+                                self.logger.info(f"工作表 {sheet_name} 是只读模式，使用特殊处理")
+                                # 创建一个简单表格
+                                rows = self._get_read_only_sheet_data(sheet)
+                            else:
+                                # 获取所有行的数据，同时安全地处理所有单元格值
+                                rows = []
+                                try:
+                                    for row in sheet.iter_rows():
+                                        row_values = []
+                                        for cell in row:
+                                            # 安全地获取单元格值，处理所有可能的类型
+                                            try:
+                                                if cell.value is None:
+                                                    row_values.append('')
+                                                else:
+                                                    row_values.append(str(cell.value))
+                                            except Exception as e:
+                                                self.logger.warning(f"转换单元格值时出错: {str(e)}")
+                                                row_values.append('[转换错误]')
+                                        rows.append(row_values)
+                                except Exception as e:
+                                    self.logger.warning(f"处理工作表 {sheet_name} 行时出错: {str(e)}")
+                                    rows = [["数据处理错误：无法读取此工作表内容"]]
+                            
+                            if not rows:
+                                f.write("*空工作表*\n\n")
+                                continue
+                            
+                            # 确定每列的最大宽度（用于对齐）
+                            col_widths = []
+                            max_cols = max(len(row) for row in rows) if rows else 0
+                            
+                            for col_idx in range(max_cols):
+                                max_width = 0
+                                for row in rows:
+                                    if col_idx < len(row):
+                                        cell_str = row[col_idx]
+                                        max_width = max(max_width, len(cell_str))
+                                col_widths.append(max_width)
+                            
+                            # 如果没有列，继续下一个工作表
+                            if not col_widths:
+                                f.write("*空工作表*\n\n")
+                                continue
+                            
+                            # 第一行作为表头
+                            header = rows[0] if rows else []
+                            header_row = "| "
+                            for col_idx, cell in enumerate(header):
+                                if col_idx < len(col_widths):
+                                    header_row += cell.ljust(col_widths[col_idx]) + " | "
+                            f.write(header_row + "\n")
+                            
+                            # 分隔行
+                            separator = "| "
+                            for width in col_widths:
+                                separator += "-" * width + " | "
+                            f.write(separator + "\n")
+                            
+                            # 数据行
+                            for row_idx, row in enumerate(rows[1:], 1):
+                                row_str = "| "
+                                for col_idx, cell in enumerate(row):
+                                    if col_idx < len(col_widths):
+                                        row_str += cell.ljust(col_widths[col_idx]) + " | "
+                                f.write(row_str + "\n")
+                    
+                    except Exception as sheet_e:
+                        self.logger.error(f"处理工作表 {sheet_name} 时出错: {str(sheet_e)}")
+                        with open(sheet_output_path, 'w', encoding='utf-8') as f:
+                            f.write(f"*处理此工作表时出错: {str(sheet_e)}*\n\n")
+                    
+                    # 更新进度
+                    processed_sheets += 1
+                    if progress_callback:
+                        progress_callback(int(processed_sheets / sheet_count * 100))
+                
+                return True
+            
+            else:
+                # 单个工作表，使用原始方法处理
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    sheet_name = workbook.sheetnames[0]
+                    try:
+                        sheet = workbook[sheet_name]
                         
                         # 处理特殊情况:如果这是一个只读工作表(read_only=True)
                         if getattr(sheet, '_read_only', False):
@@ -268,7 +364,7 @@ class ExcelConverter:
                         
                         if not rows:
                             f.write("*空工作表*\n\n")
-                            continue
+                            return True
                         
                         # 确定每列的最大宽度（用于对齐）
                         col_widths = []
@@ -285,7 +381,7 @@ class ExcelConverter:
                         # 如果没有列，继续下一个工作表
                         if not col_widths:
                             f.write("*空工作表*\n\n")
-                            continue
+                            return True
                         
                         # 第一行作为表头
                         header = rows[0] if rows else []
@@ -309,19 +405,15 @@ class ExcelConverter:
                                     row_str += cell.ljust(col_widths[col_idx]) + " | "
                             f.write(row_str + "\n")
                         
-                        # 工作表之间添加空行
-                        f.write("\n\n")
                     except Exception as sheet_e:
                         self.logger.error(f"处理工作表 {sheet_name} 时出错: {str(sheet_e)}")
-                        f.write(f"# {sheet_name}\n\n")
                         f.write(f"*处理此工作表时出错: {str(sheet_e)}*\n\n")
                         
                     # 更新进度
-                    processed_sheets += 1
                     if progress_callback:
-                        progress_callback(int(processed_sheets / sheet_count * 100))
-            
-            return True
+                        progress_callback(100)
+                
+                return True
             
         except Exception as e:
             self.logger.error(f"保存为Markdown失败: {str(e)}", exc_info=True)

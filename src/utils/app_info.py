@@ -12,7 +12,7 @@ class AppInfo:
     NAME = "Junly文件工具"
     
     # 应用版本号
-    VERSION = "1.0.1"
+    VERSION = "1.0.2"
     
     # 版本号前缀
     VERSION_PREFIX = "v"
