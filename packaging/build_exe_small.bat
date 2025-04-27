@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
-echo 开始构建Junly文件工具轻量版可执行程序...
+echo 开始构建Junly文件转换工具轻量版可执行程序...
 
 rem 设置工作目录为项目根目录
 cd ..
@@ -34,7 +34,7 @@ pyinstaller --clean --upx-dir=".venv\Lib\site-packages\PyInstaller\utils\upx" pa
 
 echo.
 if %errorlevel% equ 0 (
-    echo 构建成功！轻量版可执行文件位于 dist\Junly文件工具 目录中
+    echo 构建成功！轻量版可执行文件位于 dist\Junly文件转换工具 目录中
     
     rem 清理构建过程中生成的临时文件
     echo 清理构建临时文件...

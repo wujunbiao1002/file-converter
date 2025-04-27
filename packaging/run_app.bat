@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
-echo 正在启动Junly文件工具...
+echo 正在启动Junly文件转换工具...
 
 rem 设置工作目录为项目根目录
 cd ..
 
-if exist "dist\Junly文件工具\Junly文件工具.exe" (
-    start "" "dist\Junly文件工具\Junly文件工具.exe"
+if exist "dist\Junly文件转换工具\Junly文件转换工具.exe" (
+    start "" "dist\Junly文件转换工具\Junly文件转换工具.exe"
     
     rem 返回到packaging目录
     cd packaging

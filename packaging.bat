@@ -2,12 +2,12 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-title Junly文件工具 - 打包管理
+title Junly文件转换工具 - 打包管理
 
 :menu
 cls
 echo ======================================
-echo      Junly文件工具 - 打包管理菜单
+echo      Junly文件转换工具 - 打包管理菜单
 echo ======================================
 echo.
 echo  [1] 标准构建应用程序

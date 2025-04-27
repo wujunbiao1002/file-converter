@@ -1,19 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Junly文件工具 - 主窗口
+Junly文件转换工具 - 主窗口
 版权所有 (c) 2025 Junly
 """
 
 import os
 import sys
+
+# 将项目根目录添加到系统路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
 from PyQt6.QtWidgets import (
     QMainWindow, QTabWidget, QMessageBox, QFileDialog,
     QStatusBar, QProgressBar, QLabel, QWidget, QVBoxLayout,
     QApplication, QFrame, QHBoxLayout, QPushButton
 )
-from PyQt6.QtCore import Qt, QSize, QPoint, QRect, QRectF, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QAction, QIcon, QPainter, QColor, QPainterPath, QRegion, QPen
+from PyQt6.QtCore import Qt, QSize, QPoint, QRect, QRectF, QPropertyAnimation, QEasingCurve, QUrl
+from PyQt6.QtGui import QAction, QIcon, QPainter, QColor, QPainterPath, QRegion, QPen, QDesktopServices, QCursor
 from datetime import datetime
 
 from ui.components.word_tab import WordTab
@@ -133,6 +140,14 @@ class MainWindow(QMainWindow):
         version_label = QLabel(AppInfo.get_full_version())
         version_label.setStyleSheet("color: #888888; margin-right: 5px;")
         self.statusBar.addPermanentWidget(version_label)
+        
+        # 添加博客链接
+        blog_link = QLabel('<a href="https://junly.top">访问Junly的博客</a>')
+        blog_link.setStyleSheet("color: #0066cc; margin-right: 5px;")
+        blog_link.setOpenExternalLinks(True)
+        blog_link.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        blog_link.setToolTip("https://junly.top")
+        self.statusBar.addPermanentWidget(blog_link)
         
         # 使用AppInfo类获取版权信息
         copyright_label = QLabel(AppInfo.get_copyright_text(current_year))
@@ -266,12 +281,23 @@ class MainWindow(QMainWindow):
         settings_action.triggered.connect(self.open_settings)
         edit_menu.addAction(settings_action)
         
+        # 更新菜单
+        update_menu = self.menuBar().addMenu("更新")
+        
+        check_update_action = QAction("检查更新", self)
+        check_update_action.triggered.connect(self.open_website)
+        update_menu.addAction(check_update_action)
+        
         # 帮助菜单
         help_menu = self.menuBar().addMenu("帮助")
         
         about_action = QAction("关于", self)
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
+        
+        contact_action = QAction("联系方式", self)
+        contact_action.triggered.connect(self.open_website)
+        help_menu.addAction(contact_action)
     
     def open_file(self):
         """打开文件对话框"""
@@ -602,4 +628,8 @@ class MainWindow(QMainWindow):
             self.max_button.setText("🗖")
         else:
             self.showMaximized()
-            self.max_button.setText("🗗") 
+            self.max_button.setText("🗗")
+    
+    def open_website(self):
+        """打开网站"""
+        QDesktopServices.openUrl(QUrl("https://junly.top/posts/soft-file-converter")) 

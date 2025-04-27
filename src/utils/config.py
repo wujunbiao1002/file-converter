@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Junly文件工具 - 配置管理工具
+Junly文件转换工具 - 配置管理工具
 版权所有 (c) 2025 Junly
 """
 

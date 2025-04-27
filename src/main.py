@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Junly文件工具 - 主程序入口
+Junly文件转换工具 - 主程序入口
 版权所有 (c) 2025 Junly
 """
 
@@ -59,7 +59,7 @@ def main():
     
     # 确保Python解释器每隔一段时间处理信号
     timer = QTimer()
-    timer.start(500)  # 每500毫秒
+    timer.start(500)  # 每500毫秒   
     timer.timeout.connect(lambda: None)  # 保持解释器活动以处理信号
     
     # 确保所有线程在应用退出时都能正确关闭

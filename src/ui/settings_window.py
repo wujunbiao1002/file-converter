@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Junly文件工具 - 设置窗口
+Junly文件转换工具 - 设置窗口
 版权所有 (c) 2025 Junly
 """
 

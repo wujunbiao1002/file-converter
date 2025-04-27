@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-echo 开始构建Junly文件工具可执行程序...
+echo 开始构建Junly文件转换工具可执行程序...
 
 rem 设置工作目录为项目根目录
 cd ..
@@ -30,7 +30,7 @@ pyinstaller --clean packaging\file_converter.spec
 
 echo.
 if %errorlevel% equ 0 (
-    echo 构建成功！可执行文件位于 dist\Junly文件工具 目录中
+    echo 构建成功！可执行文件位于 dist\Junly文件转换工具 目录中
     
     rem 清理构建过程中生成的临时文件
     if exist build rmdir /s /q build

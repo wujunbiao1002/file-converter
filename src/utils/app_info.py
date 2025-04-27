@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Junly文件工具 - 应用信息管理
+Junly文件转换工具 - 应用信息管理
 版权所有 (c) 2025 Junly
 """
+
+from datetime import datetime
 
 class AppInfo:
     """应用信息类，用于集中管理应用信息"""
     
     # 应用名称
-    NAME = "Junly文件工具"
+    NAME = "Junly文件转换工具"
     
     # 应用版本号
     VERSION = "1.0.3"
@@ -24,7 +26,7 @@ class AppInfo:
     AUTHOR = "Junly"
     
     # 应用版权年份起始
-    COPYRIGHT_YEAR_START = "2025"
+    COPYRIGHT_YEAR_START = "2023"
     
     @classmethod
     def get_version(cls):
@@ -46,13 +48,11 @@ class AppInfo:
         Returns:
             str: 格式化的版权文本
         """
-        import datetime
-        
         if current_year is None:
-            current_year = datetime.datetime.now().year
+            current_year = datetime.now().year
             
         copyright_year = f"{cls.COPYRIGHT_YEAR_START}-{current_year}" if int(current_year) > int(cls.COPYRIGHT_YEAR_START) else cls.COPYRIGHT_YEAR_START
-        return f"{copyright_year} {cls.AUTHOR}"
+        return f"@{copyright_year} {cls.AUTHOR}"
     
     @classmethod
     def get_app_name(cls):
@@ -60,14 +60,14 @@ class AppInfo:
         return cls.NAME
     
     @classmethod
-    def get_about_text(cls):
-        """获取关于对话框文本"""
-        import datetime
-        current_year = datetime.datetime.now().year
-        copyright_year = f"{cls.COPYRIGHT_YEAR_START}-{current_year}" if int(current_year) > int(cls.COPYRIGHT_YEAR_START) else cls.COPYRIGHT_YEAR_START
-        
+    def get_about_text(cls, copyright_year=None):
+        """获取关于文本"""
+        if not copyright_year:
+            current_year = datetime.now().year
+            copyright_year = f"{cls.COPYRIGHT_YEAR_START}-{current_year}" if int(current_year) > int(cls.COPYRIGHT_YEAR_START) else cls.COPYRIGHT_YEAR_START
         return (
             f"{cls.NAME} {cls.FULL_VERSION}\n\n"
-            f"一个用于各种文件格式转换的工具\n"
-            f"{copyright_year} {cls.AUTHOR}"
+            f"一个用于各种文件格式转换的工具\n\n"
+            f"联系方式: https://junly.top\n"
+            f"@{copyright_year} By {cls.AUTHOR}"
         ) 
