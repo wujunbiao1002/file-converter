@@ -26,7 +26,7 @@ class AppInfo:
     AUTHOR = "Junly"
     
     # 应用版权年份起始
-    COPYRIGHT_YEAR_START = "2023"
+    COPYRIGHT_YEAR_START = "2025"
     
     @classmethod
     def get_version(cls):
